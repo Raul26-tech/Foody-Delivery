@@ -1,0 +1,29 @@
+# Environment
+.env
+*.env
+!.env.example
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Java and Maven
+backend/target/
+backend/.mvn/timing.properties
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+*.log
+logs/
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Docker local data
+docker-data/
