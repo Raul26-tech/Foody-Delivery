@@ -27,3 +27,4 @@ Thumbs.db
 
 # Docker local data
 docker-data/
+node_modules
