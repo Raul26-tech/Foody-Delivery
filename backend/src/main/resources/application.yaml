@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:foody_tracker}
     username: ${POSTGRES_USER:foody}
-    password: ${POSTGRES_PASSWORD:foody_password}
+    password: ${POSTGRES_PASSWORD:foody@123}
 
   jpa:
     open-in-view: false
@@ -24,6 +24,13 @@ spring:
     timeout: 30m
     jdbc:
       initialize-schema: never
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 50
+        one-indexed-parameters: false
 
 server:
   port: ${SERVER_PORT:8080}
