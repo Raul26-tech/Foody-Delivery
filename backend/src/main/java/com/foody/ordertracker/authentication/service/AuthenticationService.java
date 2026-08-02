@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 public class AuthenticationService {
@@ -52,7 +53,7 @@ public class AuthenticationService {
         String normalizedEmail = normalizeEmail(request.email());
 
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new EmailAlreadyRegisteredException(normalizedEmail);
+            throw new EmailAlreadyRegisteredException();
         }
 
         User user = new User(
@@ -61,9 +62,13 @@ public class AuthenticationService {
             passwordEncoder.encode(request.password())
         );
 
-        User savedUser = userRepository.save(user);
+        try {
+            User savedUser = userRepository.saveAndFlush(user);
 
-        return AuthenticatedUserResponse.from(savedUser);
+            return AuthenticatedUserResponse.from(savedUser);
+        } catch (DataIntegrityViolationException exception) {
+            throw new EmailAlreadyRegisteredException();
+        }
     }
 
     public AuthenticatedUserResponse login(
