@@ -47,9 +47,9 @@ public class Order {
     private User createdBy;
 
     @OneToMany(
-            mappedBy = "order",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
+        mappedBy = "order",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
     )
     private List<OrderItem> items = new ArrayList<>();
 
@@ -63,43 +63,43 @@ public class Order {
     }
 
     public Order(
-            String customerName,
-            String deliveryAddress,
-            User createdBy
+        String customerName,
+        String deliveryAddress,
+        User createdBy
     ) {
         this.id = UUID.randomUUID();
         this.customerName = requireText(
-                customerName,
-                "customerName"
+            customerName,
+            "customerName"
         );
         this.deliveryAddress = requireText(
-                deliveryAddress,
-                "deliveryAddress"
+            deliveryAddress,
+            "deliveryAddress"
         );
         this.createdBy = requireUser(createdBy);
         this.status = OrderStatus.RECEBIDO;
     }
 
     public void addItem(
-            String description,
-            int quantity,
-            BigDecimal unitPrice
+        String description,
+        int quantity,
+        BigDecimal unitPrice
     ) {
         items.add(
-                new OrderItem(
-                        description,
-                        quantity,
-                        unitPrice,
-                        this
-                )
+            new OrderItem(
+                description,
+                quantity,
+                unitPrice,
+                this
+            )
         );
     }
 
     public void updateStatus(OrderStatus newStatus) {
         if (!status.canTransitionTo(newStatus)) {
             throw new InvalidOrderStatusTransitionException(
-                    status,
-                    newStatus
+                status,
+                newStatus
             );
         }
 
@@ -128,12 +128,12 @@ public class Order {
     }
 
     private static String requireText(
-            String value,
-            String field
+        String value,
+        String field
     ) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(
-                    field + " must not be blank"
+                field + " must not be blank"
             );
         }
 
@@ -143,7 +143,7 @@ public class Order {
     private static User requireUser(User user) {
         if (user == null) {
             throw new IllegalArgumentException(
-                    "createdBy must not be null"
+                "createdBy must not be null"
             );
         }
 
@@ -152,8 +152,16 @@ public class Order {
 
     public BigDecimal calculateTotal() {
         return items.stream()
-                .map(OrderItem::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .map(OrderItem::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public void validateForCreation() {
+        if (items.isEmpty()) {
+            throw new IllegalStateException(
+                "Order must contain at least one item"
+            );
+        }
     }
 
     public UUID getId() {
