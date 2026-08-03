@@ -22,6 +22,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -38,6 +39,8 @@ public class SecurityConfiguration {
     ) throws Exception {
         CookieCsrfTokenRepository csrfTokenRepository =
             CookieCsrfTokenRepository.withHttpOnlyFalse();
+        CsrfTokenRequestAttributeHandler csrfTokenRequestHandler =
+            new CsrfTokenRequestAttributeHandler();
 
         csrfTokenRepository.setCookieName("XSRF-TOKEN");
         csrfTokenRepository.setHeaderName("X-XSRF-TOKEN");
@@ -47,6 +50,7 @@ public class SecurityConfiguration {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository)
+                .csrfTokenRequestHandler(csrfTokenRequestHandler)
             )
             .securityContext(context -> context
                 .securityContextRepository(
