@@ -5,6 +5,16 @@ export type OrderStatus =
   | "ENTREGUE"
   | "CANCELADO";
 
+export type DeliveryAddress = {
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string | null;
+};
+
 export type OrderItem = {
   id: string;
   description: string;
@@ -16,7 +26,9 @@ export type OrderItem = {
 export type Order = {
   id: string;
   customerName: string;
-  deliveryAddress: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  deliveryAddress: DeliveryAddress;
   status: OrderStatus;
   items: OrderItem[];
   total: number;
@@ -31,9 +43,21 @@ export type CreateOrderItemRequest = {
   unitPrice: number;
 };
 
+export type CreateDeliveryAddressRequest = {
+  street: string;
+  number: string;
+  complement?: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode?: string | null;
+};
+
 export type CreateOrderRequest = {
   customerName: string;
-  deliveryAddress: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  deliveryAddress: CreateDeliveryAddressRequest;
   items: CreateOrderItemRequest[];
 };
 

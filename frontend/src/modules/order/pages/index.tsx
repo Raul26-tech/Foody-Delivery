@@ -47,7 +47,15 @@ function matchesSearch(order: Order, search: string): boolean {
 
   return [
     order.customerName,
-    order.deliveryAddress,
+    order.customerPhone,
+    order.customerEmail ?? "",
+    order.deliveryAddress.street,
+    order.deliveryAddress.number,
+    order.deliveryAddress.complement ?? "",
+    order.deliveryAddress.neighborhood,
+    order.deliveryAddress.city,
+    order.deliveryAddress.state,
+    order.deliveryAddress.zipCode ?? "",
     order.id,
     getOrderCode(order),
   ].some((value) => value.toLowerCase().includes(normalizedSearch));
