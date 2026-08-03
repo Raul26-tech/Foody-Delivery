@@ -35,6 +35,7 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { AppLayout } from "../../../components/layout";
+import { useNotification } from "../../../contexts/notification";
 import { useAuth } from "../../../hooks/useAuth";
 import { api } from "../../../service/api";
 import { createOrderSchema, type CreateOrderFormDto } from "../schemas";
@@ -231,6 +232,7 @@ async function createOrder(payload: CreateOrderRequest): Promise<Order> {
 export function FormOrderPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { notifyApiError, notifySuccess } = useNotification();
   const { user } = useAuth();
   const { orderId } = useParams<{ orderId: string }>();
   const isCreateMode = !orderId;
@@ -285,16 +287,24 @@ export function FormOrderPage() {
 
   const statusMutation = useMutation({
     mutationFn: (status: OrderStatus) => updateOrderStatus(orderId!, status),
+    onError: (error) => {
+      notifyApiError(error, "Nao foi possivel atualizar o status do pedido.");
+    },
     onSuccess: async (updatedOrder) => {
       queryClient.setQueryData(["orders", "detail", orderId], updatedOrder);
       await queryClient.invalidateQueries({ queryKey: ["orders", "list"] });
+      notifySuccess("Status do pedido atualizado.");
     },
   });
 
   const createOrderMutation = useMutation({
     mutationFn: createOrder,
+    onError: (error) => {
+      notifyApiError(error, "Nao foi possivel criar o pedido.");
+    },
     onSuccess: async (createdOrder) => {
       await queryClient.invalidateQueries({ queryKey: ["orders", "list"] });
+      notifySuccess("Pedido criado com sucesso.");
       navigate(`/orders/${createdOrder.id}`, { replace: true });
     },
   });
@@ -836,12 +846,6 @@ export function FormOrderPage() {
                 </Typography>
               </Box>
 
-              {createOrderMutation.isError ? (
-                <Alert severity="error" sx={{ mb: 1.5 }}>
-                  Nao foi possivel criar o pedido. Revise os dados e tente
-                  novamente.
-                </Alert>
-              ) : null}
 
               <Button
                 disabled={createOrderMutation.isPending}
@@ -1151,11 +1155,6 @@ export function FormOrderPage() {
                     );
                   })}
                 </Box>
-                {statusMutation.isError ? (
-                  <Alert severity="error" sx={{ mt: 1.5 }}>
-                    Nao foi possivel atualizar o status do pedido.
-                  </Alert>
-                ) : null}
               </Paper>
 
               <Paper

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { theme } from "./theme/theme.ts";
 import CssBaseline from "@mui/material/CssBaseline";
 import { BrowserRouter } from "react-router-dom";
+import { NotificationProvider } from "./contexts/notification";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,11 +21,13 @@ createRoot(document.getElementById("root")!).render(
   <ThemeProvider theme={theme}>
     <CssBaseline />
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
+      <NotificationProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </NotificationProvider>
     </QueryClientProvider>
   </ThemeProvider>,
 );
