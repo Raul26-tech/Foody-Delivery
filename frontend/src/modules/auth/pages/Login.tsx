@@ -19,7 +19,7 @@ import {
 import axios from "axios";
 import { type SyntheticEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import type { ApiErrorResponse } from "../../../types/api-error-response";
 import {
@@ -42,6 +42,10 @@ type AuthTextFieldProps = {
   value?: string;
   onBlur: () => void;
   onChange: (value: string) => void;
+};
+
+type LocationState = {
+  from?: string;
 };
 
 function getApiErrorMessage(error: unknown): string {
@@ -142,6 +146,8 @@ function LogoMark({ size = 44 }: { size?: number }) {
 }
 
 export function LoginPage() {
+  const location = useLocation();
+  const state = location.state as LocationState | null;
   const navigate = useNavigate();
   const { isAuthenticated, isInitializing, login, register } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
@@ -176,7 +182,9 @@ export function LoginPage() {
 
     try {
       await login(values);
-      navigate("/orders", { replace: true });
+      navigate(state?.from ?? "/orders", {
+        replace: true,
+      });
     } catch (error: unknown) {
       setFeedbackMessage(getApiErrorMessage(error));
     }
