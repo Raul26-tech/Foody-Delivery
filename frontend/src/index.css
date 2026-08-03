@@ -10,6 +10,7 @@ body,
 
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #f5f5f5;
+  font-family: Roboto, Arial, sans-serif;
+  background-color: #fcfefc;
+  color: #18181b;
 }
