@@ -10,7 +10,9 @@ import com.foody.ordertracker.order.domain.OrderStatus;
 public record OrderResponse(
     UUID id,
     String customerName,
-    String deliveryAddress,
+    String customerPhone,
+    String customerEmail,
+    DeliveryAddressResponse deliveryAddress,
     OrderStatus status,
     List<OrderItemResponse> items,
     BigDecimal total,

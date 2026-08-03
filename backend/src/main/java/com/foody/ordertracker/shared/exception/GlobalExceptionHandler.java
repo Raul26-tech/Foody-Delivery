@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return buildResponse(
-            HttpStatus.UNPROCESSABLE_ENTITY,
+            HttpStatus.UNPROCESSABLE_CONTENT,
             exception.getMessage(),
             request
         );
