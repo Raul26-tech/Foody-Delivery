@@ -1,5 +1,32 @@
 import { z } from "zod";
 
+export const createDeliveryAddressSchema = z.object({
+  street: z
+    .string()
+    .min(1, "Informe a rua")
+    .max(150, "A rua deve ter no maximo 150 caracteres"),
+  number: z
+    .string()
+    .min(1, "Informe o numero")
+    .max(30, "O numero deve ter no maximo 30 caracteres"),
+  complement: z
+    .string()
+    .max(100, "O complemento deve ter no maximo 100 caracteres"),
+  neighborhood: z
+    .string()
+    .min(1, "Informe o bairro")
+    .max(100, "O bairro deve ter no maximo 100 caracteres"),
+  city: z
+    .string()
+    .min(1, "Informe a cidade")
+    .max(100, "A cidade deve ter no maximo 100 caracteres"),
+  state: z
+    .string()
+    .min(1, "Informe a UF")
+    .regex(/^[A-Za-z]{2}$/, "A UF deve conter exatamente 2 letras"),
+  zipCode: z.string().max(10, "O CEP deve ter no maximo 10 caracteres"),
+});
+
 export const createOrderItemSchema = z.object({
   description: z
     .string()
@@ -24,10 +51,18 @@ export const createOrderSchema = z.object({
     .string()
     .min(1, "Informe o nome do cliente")
     .max(120, "O nome deve ter no maximo 120 caracteres"),
-  deliveryAddress: z
+  customerPhone: z
     .string()
-    .min(1, "Informe o endereco de entrega")
-    .max(300, "O endereco deve ter no maximo 300 caracteres"),
+    .min(1, "Informe o telefone do cliente")
+    .max(20, "O telefone deve ter no maximo 20 caracteres"),
+  customerEmail: z
+    .string()
+    .max(180, "O e-mail deve ter no maximo 180 caracteres")
+    .refine(
+      (value) => value.trim() === "" || z.string().email().safeParse(value).success,
+      "Informe um e-mail valido",
+    ),
+  deliveryAddress: createDeliveryAddressSchema,
   items: z
     .array(createOrderItemSchema)
     .min(1, "O pedido deve conter pelo menos um item"),

@@ -2,6 +2,8 @@ package com.foody.ordertracker.order.mapper;
 
 import java.util.List;
 
+import com.foody.ordertracker.order.domain.DeliveryAddress;
+import com.foody.ordertracker.order.dto.DeliveryAddressResponse;
 import com.foody.ordertracker.order.domain.Order;
 import com.foody.ordertracker.order.domain.OrderItem;
 import com.foody.ordertracker.order.dto.OrderItemResponse;
@@ -21,13 +23,29 @@ public class OrderMapper {
         return new OrderResponse(
             order.getId(),
             order.getCustomerName(),
-            order.getDeliveryAddress(),
+            order.getCustomerPhone(),
+            order.getCustomerEmail(),
+            toAddressResponse(order.getDeliveryAddress()),
             order.getStatus(),
             items,
             order.calculateTotal(),
             order.getCreatedBy().getId(),
             order.getCreatedAt(),
             order.getUpdatedAt()
+        );
+    }
+
+    private DeliveryAddressResponse toAddressResponse(
+        DeliveryAddress address
+    ) {
+        return new DeliveryAddressResponse(
+            address.getStreet(),
+            address.getNumber(),
+            address.getComplement(),
+            address.getNeighborhood(),
+            address.getCity(),
+            address.getState(),
+            address.getZipCode()
         );
     }
 

@@ -3,7 +3,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import { Box, Chip, IconButton, Paper, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 
-import type { Order, OrderStatus } from "../types";
+import type { DeliveryAddress, Order, OrderStatus } from "../types";
 
 type OrderListProps = {
   orders: Order[];
@@ -89,6 +89,10 @@ function formatItemsSummary(order: Order): string {
     .join(", ");
 }
 
+function formatDeliveryAddress(address: DeliveryAddress): string {
+  return `${address.street}, ${address.number} - ${address.neighborhood}`;
+}
+
 export function OrderList({ footer, orders, onOrderClick }: OrderListProps) {
   if (orders.length === 0) {
     return (
@@ -129,36 +133,43 @@ export function OrderList({ footer, orders, onOrderClick }: OrderListProps) {
         overflow: "hidden",
       }}
     >
-      {orders.map((order, index) => {
-        const meta = statusMeta[order.status];
+      <Box
+        sx={{
+          maxHeight: orders.length > 2 ? { xs: 430, md: "calc(100vh - 360px)" } : "none",
+          minHeight: 0,
+          overflowY: orders.length > 2 ? "auto" : "visible",
+        }}
+      >
+        {orders.map((order, index) => {
+          const meta = statusMeta[order.status];
 
-        return (
-          <Box
-            key={order.id}
-            component="button"
-            onClick={() => onOrderClick(order)}
-            sx={{
-              alignItems: "center",
-              bgcolor: "background.paper",
-              border: 0,
-              borderTop: index === 0 ? 0 : "1px solid",
-              borderColor: "divider",
-              cursor: "pointer",
-              display: "grid",
-              fontFamily: "Roboto",
-              gap: 2,
-              gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
-              minHeight: 108,
-              p: { xs: 2, sm: 2.25 },
-              textAlign: "left",
-              width: "100%",
-              "&:hover": {
-                bgcolor: "#fbfbfb",
-              },
-            }}
-            type="button"
-          >
-            <Box sx={{ minWidth: 0 }}>
+          return (
+            <Box
+              key={order.id}
+              component="button"
+              onClick={() => onOrderClick(order)}
+              sx={{
+                alignItems: "center",
+                bgcolor: "background.paper",
+                border: 0,
+                borderTop: index === 0 ? 0 : "1px solid",
+                borderColor: "divider",
+                cursor: "pointer",
+                display: "grid",
+                fontFamily: "Roboto",
+                gap: 2,
+                gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
+                minHeight: 108,
+                p: { xs: 2, sm: 2.25 },
+                textAlign: "left",
+                width: "100%",
+                "&:hover": {
+                  bgcolor: "#fbfbfb",
+                },
+              }}
+              type="button"
+            >
+              <Box sx={{ minWidth: 0 }}>
               <Box
                 sx={{
                   alignItems: "center",
@@ -245,21 +256,21 @@ export function OrderList({ footer, orders, onOrderClick }: OrderListProps) {
                     whiteSpace: { xs: "normal", md: "nowrap" },
                   }}
                 >
-                  {order.deliveryAddress}
+                  {formatDeliveryAddress(order.deliveryAddress)}
                 </Typography>
               </Box>
-            </Box>
+              </Box>
 
-            <Box
-              sx={{
+              <Box
+                sx={{
                 alignItems: "center",
                 display: "flex",
                 flexDirection: "row",
                 gap: 1.25,
                 justifyContent: { xs: "space-between", sm: "flex-end" },
               }}
-            >
-              <Box sx={{ textAlign: "right" }}>
+              >
+                <Box sx={{ textAlign: "right" }}>
                 <Typography
                   sx={{
                     color: "text.disabled",
@@ -276,19 +287,20 @@ export function OrderList({ footer, orders, onOrderClick }: OrderListProps) {
                 >
                   {formatCurrency(order.total)}
                 </Typography>
-              </Box>
+                </Box>
 
-              <IconButton
+                <IconButton
                 aria-label="Abrir pedido"
                 size="small"
                 sx={{ bgcolor: "#f3f4f6", height: 28, width: 28 }}
-              >
-                <KeyboardArrowRightIcon fontSize="small" />
-              </IconButton>
+                >
+                  <KeyboardArrowRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
-          </Box>
-        );
-      })}
+          );
+        })}
+      </Box>
       {footer}
     </Paper>
   );

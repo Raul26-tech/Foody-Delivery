@@ -31,7 +31,6 @@ import {
 } from "@mui/material";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -110,6 +109,24 @@ const quickStatuses: OrderStatus[] = [
   "CANCELADO",
 ];
 
+const compactTextFieldSx = {
+  "& .MuiFormHelperText-root": {
+    fontSize: 10,
+    mx: 0,
+  },
+  "& .MuiInputLabel-root": {
+    fontSize: 12,
+  },
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 1.2,
+    fontSize: 13,
+    height: 36,
+  },
+  "& .MuiOutlinedInput-input": {
+    py: 0,
+  },
+};
+
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
@@ -143,17 +160,6 @@ function getProgressIndex(status: OrderStatus): number {
   return progressStatuses.indexOf(status);
 }
 
-function getAddressParts(address: string) {
-  const [street = address, neighborhood = "Nao informado", city = "Nao informado"] =
-    address.split(" - ").map((part) => part.trim()).filter(Boolean);
-
-  return {
-    street,
-    neighborhood,
-    city,
-  };
-}
-
 function StatusChip({ status }: { status: OrderStatus }) {
   const meta = statusMeta[status];
 
@@ -174,7 +180,13 @@ function StatusChip({ status }: { status: OrderStatus }) {
   );
 }
 
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
+function SectionTitle({
+  icon,
+  title,
+}: {
+  icon: React.ReactNode;
+  title: string;
+}) {
   return (
     <Box sx={{ alignItems: "center", display: "flex", gap: 0.75, mb: 1.5 }}>
       {icon}
@@ -199,7 +211,10 @@ async function findOrderById(orderId: string): Promise<Order> {
   return response.data;
 }
 
-async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
+async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+): Promise<Order> {
   const response = await api.patch<Order>(`/orders/${orderId}/status`, {
     status,
   });
@@ -224,7 +239,17 @@ export function FormOrderPage() {
     resolver: zodResolver(createOrderSchema),
     defaultValues: {
       customerName: "",
-      deliveryAddress: "",
+      customerPhone: "",
+      customerEmail: "",
+      deliveryAddress: {
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+        zipCode: "",
+      },
       items: [
         {
           description: "",
@@ -240,10 +265,11 @@ export function FormOrderPage() {
     name: "items",
   });
 
-  const watchedItems = useWatch({
-    control: createOrderForm.control,
-    name: "items",
-  }) ?? [];
+  const watchedItems =
+    useWatch({
+      control: createOrderForm.control,
+      name: "items",
+    }) ?? [];
   const createOrderTotal = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
     const unitPrice = Number(item.unitPrice) || 0;
@@ -274,13 +300,27 @@ export function FormOrderPage() {
   });
 
   const order = orderQuery.data;
-  const addressParts = useMemo(
-    () => getAddressParts(order?.deliveryAddress ?? ""),
-    [order?.deliveryAddress],
-  );
 
   function handleCreateSubmit(values: CreateOrderFormDto): void {
-    createOrderMutation.mutate(values);
+    createOrderMutation.mutate({
+      customerName: values.customerName.trim(),
+      customerPhone: values.customerPhone.trim(),
+      customerEmail: values.customerEmail.trim() || null,
+      deliveryAddress: {
+        street: values.deliveryAddress.street.trim(),
+        number: values.deliveryAddress.number.trim(),
+        complement: values.deliveryAddress.complement.trim() || null,
+        neighborhood: values.deliveryAddress.neighborhood.trim(),
+        city: values.deliveryAddress.city.trim(),
+        state: values.deliveryAddress.state.trim().toUpperCase(),
+        zipCode: values.deliveryAddress.zipCode.trim() || null,
+      },
+      items: values.items.map((item) => ({
+        description: item.description.trim(),
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    });
   }
 
   function handleStatusChange(status: OrderStatus): void {
@@ -360,14 +400,16 @@ export function FormOrderPage() {
               }}
             >
               <SectionTitle
-                icon={<PersonOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                icon={
+                  <PersonOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />
+                }
                 title="Dados do Pedido"
               />
               <Box
                 sx={{
                   display: "grid",
                   gap: 1.5,
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gridTemplateColumns: { xs: "1fr", sm: "minmax(0, 320px) minmax(0, 320px)" },
                 }}
               >
                 <Controller
@@ -382,21 +424,174 @@ export function FormOrderPage() {
                       label="Cliente"
                       placeholder="Nome do cliente"
                       size="small"
+                      sx={compactTextFieldSx}
                     />
                   )}
                 />
                 <Controller
                   control={createOrderForm.control}
-                  name="deliveryAddress"
+                  name="customerPhone"
                   render={({ field, fieldState }) => (
                     <TextField
                       {...field}
                       error={Boolean(fieldState.error)}
                       fullWidth
                       helperText={fieldState.error?.message}
-                      label="Endereco de entrega"
-                      placeholder="Rua, numero - Bairro - Cidade"
+                      label="Telefone"
+                      placeholder="(00) 00000-0000"
                       size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="customerEmail"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      value={field.value ?? ""}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="E-mail"
+                      placeholder="cliente@email.com"
+                      size="small"
+                      sx={compactTextFieldSx}
+                      type="email"
+                    />
+                  )}
+                />
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              <SectionTitle
+                icon={
+                  <LocationOnOutlinedIcon
+                    sx={{ color: "#e80000", fontSize: 15 }}
+                  />
+                }
+                title="Endereco de Entrega"
+              />
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 1.5,
+                  gridTemplateColumns: { xs: "1fr", sm: "minmax(0, 360px) minmax(0, 160px)" },
+                }}
+              >
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.street"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="Rua"
+                      placeholder="Nome da rua"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.number"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="Numero"
+                      placeholder="100"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.neighborhood"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="Bairro"
+                      placeholder="Centro"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.city"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="Cidade"
+                      placeholder="Indaiatuba"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.state"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="UF"
+                      placeholder="SP"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.zipCode"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      value={field.value ?? ""}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="CEP"
+                      placeholder="00000-000"
+                      size="small"
+                      sx={compactTextFieldSx}
+                    />
+                  )}
+                />
+                <Controller
+                  control={createOrderForm.control}
+                  name="deliveryAddress.complement"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      {...field}
+                      value={field.value ?? ""}
+                      error={Boolean(fieldState.error)}
+                      fullWidth
+                      helperText={fieldState.error?.message}
+                      label="Complemento / referencia"
+                      placeholder="Sala 3"
+                      size="small"
+                      sx={{ ...compactTextFieldSx, gridColumn: { xs: "auto", sm: "1 / -1" }, maxWidth: 680 }}
                     />
                   )}
                 />
@@ -412,12 +607,25 @@ export function FormOrderPage() {
                 p: 2,
               }}
             >
-              <Box sx={{ alignItems: "center", display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+              <Box
+                sx={{
+                  alignItems: "center",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mb: 1.5,
+                }}
+              >
                 <SectionTitle
-                  icon={<Inventory2OutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                  icon={
+                    <Inventory2OutlinedIcon
+                      sx={{ color: "#e80000", fontSize: 15 }}
+                    />
+                  }
                   title={`Itens do Pedido (${orderItemsFieldArray.fields.length})`}
                 />
-                <Typography sx={{ color: "#e80000", fontSize: 12, fontWeight: 900 }}>
+                <Typography
+                  sx={{ color: "#e80000", fontSize: 12, fontWeight: 900 }}
+                >
                   Total: {formatCurrency(createOrderTotal)}
                 </Typography>
               </Box>
@@ -425,7 +633,9 @@ export function FormOrderPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
                 {orderItemsFieldArray.fields.map((field, index) => {
                   const item = watchedItems[index];
-                  const subtotal = (Number(item?.quantity) || 0) * (Number(item?.unitPrice) || 0);
+                  const subtotal =
+                    (Number(item?.quantity) || 0) *
+                    (Number(item?.unitPrice) || 0);
 
                   return (
                     <Box
@@ -437,7 +647,10 @@ export function FormOrderPage() {
                         borderRadius: 1.3,
                         display: "grid",
                         gap: 1.25,
-                        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 96px 122px 96px 32px" },
+                        gridTemplateColumns: {
+                          xs: "1fr",
+                          md: "minmax(0, 1fr) 96px 122px 96px 32px",
+                        },
                         p: 1.25,
                       }}
                     >
@@ -452,6 +665,7 @@ export function FormOrderPage() {
                             label="Item"
                             placeholder="Descricao do item"
                             size="small"
+                            sx={compactTextFieldSx}
                           />
                         )}
                       />
@@ -465,6 +679,7 @@ export function FormOrderPage() {
                             helperText={fieldState.error?.message}
                             label="Qtd"
                             size="small"
+                            sx={compactTextFieldSx}
                             type="number"
                           />
                         )}
@@ -480,15 +695,28 @@ export function FormOrderPage() {
                             slotProps={{ htmlInput: { step: "0.01" } }}
                             label="Valor unitario"
                             size="small"
+                            sx={compactTextFieldSx}
                             type="number"
                           />
                         )}
                       />
                       <Box sx={{ alignSelf: "center" }}>
-                        <Typography sx={{ color: "text.secondary", fontSize: 10, fontWeight: 900 }}>
+                        <Typography
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: 10,
+                            fontWeight: 900,
+                          }}
+                        >
                           Subtotal
                         </Typography>
-                        <Typography sx={{ color: "#111827", fontSize: 13, fontWeight: 900 }}>
+                        <Typography
+                          sx={{
+                            color: "#111827",
+                            fontSize: 13,
+                            fontWeight: 900,
+                          }}
+                        >
                           {formatCurrency(subtotal)}
                         </Typography>
                       </Box>
@@ -547,14 +775,20 @@ export function FormOrderPage() {
               }}
             >
               <SectionTitle
-                icon={<PersonOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                icon={
+                  <PersonOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />
+                }
                 title="Operador"
               />
               <Divider sx={{ mb: 1.5 }} />
-              <Typography sx={{ color: "#111827", fontSize: 13, fontWeight: 900 }}>
+              <Typography
+                sx={{ color: "#111827", fontSize: 13, fontWeight: 900 }}
+              >
                 {user?.name ?? "Usuario logado"}
               </Typography>
-              <Typography sx={{ color: "text.secondary", fontSize: 12, mt: 0.5 }}>
+              <Typography
+                sx={{ color: "text.secondary", fontSize: 12, mt: 0.5 }}
+              >
                 {user?.email ?? "Sessao autenticada"}
               </Typography>
             </Paper>
@@ -569,26 +803,43 @@ export function FormOrderPage() {
               }}
             >
               <SectionTitle
-                icon={<Inventory2OutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                icon={
+                  <Inventory2OutlinedIcon
+                    sx={{ color: "#e80000", fontSize: 15 }}
+                  />
+                }
                 title="Resumo"
               />
               <Divider sx={{ mb: 1.5 }} />
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Itens</Typography>
-                <Typography sx={{ color: "#111827", fontSize: 12, fontWeight: 900 }}>
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
+                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                  Itens
+                </Typography>
+                <Typography
+                  sx={{ color: "#111827", fontSize: 12, fontWeight: 900 }}
+                >
                   {orderItemsFieldArray.fields.length}
                 </Typography>
               </Box>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Total</Typography>
-                <Typography sx={{ color: "#e80000", fontSize: 16, fontWeight: 900 }}>
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+              >
+                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                  Total
+                </Typography>
+                <Typography
+                  sx={{ color: "#e80000", fontSize: 16, fontWeight: 900 }}
+                >
                   {formatCurrency(createOrderTotal)}
                 </Typography>
               </Box>
 
               {createOrderMutation.isError ? (
                 <Alert severity="error" sx={{ mb: 1.5 }}>
-                  Nao foi possivel criar o pedido. Revise os dados e tente novamente.
+                  Nao foi possivel criar o pedido. Revise os dados e tente
+                  novamente.
                 </Alert>
               ) : null}
 
@@ -599,15 +850,13 @@ export function FormOrderPage() {
                 type="submit"
                 variant="contained"
                 sx={{
-                  bgcolor: "#e80000",
+                  color: "#fff",
+                  bgcolor: "#c00000",
                   borderRadius: 1.3,
                   fontSize: 12,
                   fontWeight: 900,
                   height: 38,
                   textTransform: "none",
-                  "&:hover": {
-                    bgcolor: "#c90000",
-                  },
                 }}
               >
                 {createOrderMutation.isPending ? "Criando..." : "Criar Pedido"}
@@ -622,7 +871,14 @@ export function FormOrderPage() {
   return (
     <AppLayout>
       {orderQuery.isLoading ? (
-        <Box sx={{ alignItems: "center", display: "flex", justifyContent: "center", py: 8 }}>
+        <Box
+          sx={{
+            alignItems: "center",
+            display: "flex",
+            justifyContent: "center",
+            py: 8,
+          }}
+        >
           <CircularProgress size={28} />
         </Box>
       ) : null}
@@ -662,7 +918,14 @@ export function FormOrderPage() {
               Voltar
             </Button>
 
-            <Box sx={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: 1 }}>
+            <Box
+              sx={{
+                alignItems: "center",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 1,
+              }}
+            >
               <Chip
                 label={formatOrderCode(order.id)}
                 size="small"
@@ -712,10 +975,20 @@ export function FormOrderPage() {
                   }}
                 >
                   <SectionTitle
-                    icon={<DeliveryDiningIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                    icon={
+                      <DeliveryDiningIcon
+                        sx={{ color: "#e80000", fontSize: 15 }}
+                      />
+                    }
                     title="Progresso da Entrega"
                   />
-                  <Typography sx={{ color: "text.disabled", fontSize: 11, fontWeight: 800 }}>
+                  <Typography
+                    sx={{
+                      color: "text.disabled",
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
                     Atualize o status conforme o fluxo de preparo
                   </Typography>
                 </Box>
@@ -736,7 +1009,8 @@ export function FormOrderPage() {
                       Este pedido foi cancelado.
                     </Typography>
                     <Typography sx={{ fontSize: 11 }}>
-                      Voce pode alterar o status abaixo para reativar o pedido se necessario.
+                      Voce pode alterar o status abaixo para reativar o pedido
+                      se necessario.
                     </Typography>
                   </Alert>
                 ) : (
@@ -792,7 +1066,9 @@ export function FormOrderPage() {
                                 border: "2px solid",
                                 borderColor: isFuture ? "#d1d5db" : circleColor,
                                 borderRadius: "50%",
-                                boxShadow: isCurrent ? "0 0 0 6px #fee2e2" : "none",
+                                boxShadow: isCurrent
+                                  ? "0 0 0 6px #fee2e2"
+                                  : "none",
                                 color: iconColor,
                                 display: "flex",
                                 height: 34,
@@ -891,12 +1167,24 @@ export function FormOrderPage() {
                   p: 2,
                 }}
               >
-                <Box sx={{ alignItems: "center", display: "flex", justifyContent: "space-between" }}>
+                <Box
+                  sx={{
+                    alignItems: "center",
+                    display: "flex",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <SectionTitle
-                    icon={<Inventory2OutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                    icon={
+                      <Inventory2OutlinedIcon
+                        sx={{ color: "#e80000", fontSize: 15 }}
+                      />
+                    }
                     title={`Itens do Pedido (${order.items.length})`}
                   />
-                  <Typography sx={{ color: "#e80000", fontSize: 12, fontWeight: 900 }}>
+                  <Typography
+                    sx={{ color: "#e80000", fontSize: 12, fontWeight: 900 }}
+                  >
                     Total: {formatCurrency(order.total)}
                   </Typography>
                 </Box>
@@ -912,34 +1200,95 @@ export function FormOrderPage() {
                 >
                   <TableHead sx={{ bgcolor: "#f8fafc" }}>
                     <TableRow>
-                      <TableCell sx={{ color: "text.secondary", fontSize: 11, fontWeight: 900 }}>Item</TableCell>
-                      <TableCell align="center" sx={{ color: "text.secondary", fontSize: 11, fontWeight: 900 }}>Quantidade</TableCell>
-                      <TableCell align="right" sx={{ color: "text.secondary", fontSize: 11, fontWeight: 900 }}>Valor Unitario</TableCell>
-                      <TableCell align="right" sx={{ color: "text.secondary", fontSize: 11, fontWeight: 900 }}>Subtotal</TableCell>
+                      <TableCell
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 11,
+                          fontWeight: 900,
+                        }}
+                      >
+                        Item
+                      </TableCell>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 11,
+                          fontWeight: 900,
+                        }}
+                      >
+                        Quantidade
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 11,
+                          fontWeight: 900,
+                        }}
+                      >
+                        Valor Unitario
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color: "text.secondary",
+                          fontSize: 11,
+                          fontWeight: 900,
+                        }}
+                      >
+                        Subtotal
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {order.items.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell sx={{ color: "#111827", fontSize: 12, fontWeight: 900 }}>
+                        <TableCell
+                          sx={{
+                            color: "#111827",
+                            fontSize: 12,
+                            fontWeight: 900,
+                          }}
+                        >
                           {item.description}
                         </TableCell>
-                        <TableCell align="center" sx={{ fontSize: 12, fontWeight: 800 }}>
+                        <TableCell
+                          align="center"
+                          sx={{ fontSize: 12, fontWeight: 800 }}
+                        >
                           {item.quantity}x
                         </TableCell>
-                        <TableCell align="right" sx={{ color: "text.secondary", fontSize: 12 }}>
+                        <TableCell
+                          align="right"
+                          sx={{ color: "text.secondary", fontSize: 12 }}
+                        >
                           {formatCurrency(item.unitPrice)}
                         </TableCell>
-                        <TableCell align="right" sx={{ color: "#111827", fontSize: 12, fontWeight: 900 }}>
+                        <TableCell
+                          align="right"
+                          sx={{
+                            color: "#111827",
+                            fontSize: 12,
+                            fontWeight: 900,
+                          }}
+                        >
                           {formatCurrency(item.subtotal)}
                         </TableCell>
                       </TableRow>
                     ))}
                     <TableRow sx={{ bgcolor: "#f8fafc" }}>
-                      <TableCell colSpan={3} align="right" sx={{ color: "#475569", fontSize: 12, fontWeight: 900 }}>
+                      <TableCell
+                        colSpan={3}
+                        align="right"
+                        sx={{ color: "#475569", fontSize: 12, fontWeight: 900 }}
+                      >
                         Valor Total do Pedido:
                       </TableCell>
-                      <TableCell align="right" sx={{ color: "#e80000", fontSize: 14, fontWeight: 900 }}>
+                      <TableCell
+                        align="right"
+                        sx={{ color: "#e80000", fontSize: 14, fontWeight: 900 }}
+                      >
                         {formatCurrency(order.total)}
                       </TableCell>
                     </TableRow>
@@ -955,7 +1304,9 @@ export function FormOrderPage() {
                     p: 1.5,
                   }}
                 >
-                  <Typography sx={{ color: "#92400e", fontSize: 12, fontWeight: 900 }}>
+                  <Typography
+                    sx={{ color: "#92400e", fontSize: 12, fontWeight: 900 }}
+                  >
                     Observacoes do cliente:
                   </Typography>
                   <Typography sx={{ color: "#b45309", fontSize: 12 }}>
@@ -976,20 +1327,46 @@ export function FormOrderPage() {
                 }}
               >
                 <SectionTitle
-                  icon={<PersonOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                  icon={
+                    <PersonOutlinedIcon
+                      sx={{ color: "#e80000", fontSize: 15 }}
+                    />
+                  }
                   title="Informacoes do Cliente"
                 />
                 <Divider sx={{ mb: 1.5 }} />
-                <Typography sx={{ color: "#111827", fontSize: 13, fontWeight: 900, mb: 1 }}>
+                <Typography
+                  sx={{
+                    color: "#111827",
+                    fontSize: 13,
+                    fontWeight: 900,
+                    mb: 1,
+                  }}
+                >
                   {order.customerName}
                 </Typography>
-                <Box sx={{ alignItems: "center", display: "flex", gap: 0.75, mb: 0.5 }}>
-                  <PhoneOutlinedIcon sx={{ color: "text.disabled", fontSize: 15 }} />
-                  <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Nao informado</Typography>
+                <Box
+                  sx={{
+                    alignItems: "center",
+                    display: "flex",
+                    gap: 0.75,
+                    mb: 0.5,
+                  }}
+                >
+                  <PhoneOutlinedIcon
+                    sx={{ color: "text.disabled", fontSize: 15 }}
+                  />
+                  <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                    {order.customerPhone}
+                  </Typography>
                 </Box>
                 <Box sx={{ alignItems: "center", display: "flex", gap: 0.75 }}>
-                  <MailOutlinedIcon sx={{ color: "text.disabled", fontSize: 15 }} />
-                  <Typography sx={{ color: "text.secondary", fontSize: 12 }}>Nao informado</Typography>
+                  <MailOutlinedIcon
+                    sx={{ color: "text.disabled", fontSize: 15 }}
+                  />
+                  <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                    {order.customerEmail ?? "Nao informado"}
+                  </Typography>
                 </Box>
               </Paper>
 
@@ -1003,18 +1380,35 @@ export function FormOrderPage() {
                 }}
               >
                 <SectionTitle
-                  icon={<LocationOnOutlinedIcon sx={{ color: "#e80000", fontSize: 15 }} />}
+                  icon={
+                    <LocationOnOutlinedIcon
+                      sx={{ color: "#e80000", fontSize: 15 }}
+                    />
+                  }
                   title="Endereco de Entrega"
                 />
                 <Divider sx={{ mb: 1.5 }} />
-                <Typography sx={{ color: "#111827", fontSize: 13, fontWeight: 900 }}>
-                  {addressParts.street || "Nao informado"}
+                <Typography
+                  sx={{ color: "#111827", fontSize: 13, fontWeight: 900 }}
+                >
+                  {`${order.deliveryAddress.street}, ${order.deliveryAddress.number}`}
                 </Typography>
-                <Typography sx={{ color: "#475569", fontSize: 12, fontWeight: 800, mt: 0.75 }}>
-                  Bairro: {addressParts.neighborhood}
+                <Typography
+                  sx={{
+                    color: "#475569",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    mt: 0.75,
+                  }}
+                >
+                  Bairro: {order.deliveryAddress.neighborhood}
                 </Typography>
                 <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
-                  Cidade: {addressParts.city}
+                  Cidade: {order.deliveryAddress.city} -{" "}
+                  {order.deliveryAddress.state}
+                </Typography>
+                <Typography sx={{ color: "text.secondary", fontSize: 12 }}>
+                  CEP: {order.deliveryAddress.zipCode ?? "Nao informado"}
                 </Typography>
                 <Box
                   sx={{
@@ -1026,11 +1420,19 @@ export function FormOrderPage() {
                     p: 1.25,
                   }}
                 >
-                  <Typography sx={{ color: "text.secondary", fontSize: 10, fontWeight: 900 }}>
+                  <Typography
+                    sx={{
+                      color: "text.secondary",
+                      fontSize: 10,
+                      fontWeight: 900,
+                    }}
+                  >
                     COMPLEMENTO / REF:
                   </Typography>
-                  <Typography sx={{ color: "#111827", fontSize: 12, fontWeight: 800 }}>
-                    Nao informado
+                  <Typography
+                    sx={{ color: "#111827", fontSize: 12, fontWeight: 800 }}
+                  >
+                    {order.deliveryAddress.complement ?? "Nao informado"}
                   </Typography>
                 </Box>
               </Paper>

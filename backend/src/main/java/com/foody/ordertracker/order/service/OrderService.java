@@ -20,6 +20,8 @@ import org.springframework.data.domain.Pageable;
 import com.foody.ordertracker.shared.response.PageResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.foody.ordertracker.order.domain.DeliveryAddress;
+import com.foody.ordertracker.order.dto.CreateDeliveryAddressRequest;
 
 @Service
 public class OrderService {
@@ -50,9 +52,25 @@ public class OrderService {
                 )
             );
 
+        CreateDeliveryAddressRequest addressRequest =
+            request.deliveryAddress();
+
+        DeliveryAddress deliveryAddress =
+            new DeliveryAddress(
+                addressRequest.street(),
+                addressRequest.number(),
+                addressRequest.complement(),
+                addressRequest.neighborhood(),
+                addressRequest.city(),
+                addressRequest.state(),
+                addressRequest.zipCode()
+            );
+
         Order order = new Order(
             request.customerName(),
-            request.deliveryAddress(),
+            request.customerPhone(),
+            request.customerEmail(),
+            deliveryAddress,
             user
         );
 

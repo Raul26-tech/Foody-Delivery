@@ -53,8 +53,12 @@ export function AppLayout({ children }: PropsWithChildren) {
           bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
+          boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
           display: "flex",
           height: 58,
+          position: "sticky",
+          top: 0,
+          zIndex: 1100,
           px: { xs: 2, md: 6, lg: 19 },
         }}
       >

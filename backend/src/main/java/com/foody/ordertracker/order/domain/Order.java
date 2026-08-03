@@ -24,6 +24,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Embedded;
 
 @Entity
 @Table(name = "orders")
@@ -35,8 +36,21 @@ public class Order {
     @Column(name = "customer_name", nullable = false, length = 120)
     private String customerName;
 
-    @Column(name = "delivery_address", nullable = false, length = 300)
-    private String deliveryAddress;
+    @Column(
+        name = "customer_phone",
+        nullable = false,
+        length = 20
+    )
+    private String customerPhone;
+
+    @Column(
+        name = "customer_email",
+        length = 180
+    )
+    private String customerEmail;
+
+    @Embedded
+    private DeliveryAddress deliveryAddress;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
@@ -64,20 +78,52 @@ public class Order {
 
     public Order(
         String customerName,
-        String deliveryAddress,
+        String customerPhone,
+        String customerEmail,
+        DeliveryAddress deliveryAddress,
         User createdBy
     ) {
         this.id = UUID.randomUUID();
+
         this.customerName = requireText(
             customerName,
             "customerName"
         );
-        this.deliveryAddress = requireText(
-            deliveryAddress,
-            "deliveryAddress"
+
+        this.customerPhone = requireText(
+            customerPhone,
+            "customerPhone"
         );
+
+        this.customerEmail = normalizeOptionalText(
+            customerEmail
+        );
+
+        this.deliveryAddress =
+            requireDeliveryAddress(deliveryAddress);
+
         this.createdBy = requireUser(createdBy);
         this.status = OrderStatus.RECEBIDO;
+    }
+
+    private static String normalizeOptionalText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    private static DeliveryAddress requireDeliveryAddress(
+        DeliveryAddress deliveryAddress
+    ) {
+        if (deliveryAddress == null) {
+            throw new IllegalArgumentException(
+                "deliveryAddress must not be null"
+            );
+        }
+
+        return deliveryAddress;
     }
 
     public void addItem(
@@ -172,7 +218,15 @@ public class Order {
         return customerName;
     }
 
-    public String getDeliveryAddress() {
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public DeliveryAddress getDeliveryAddress() {
         return deliveryAddress;
     }
 
